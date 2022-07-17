@@ -15,16 +15,28 @@ func main() {
 	// 		return this.item;
 	// 	}
 	// `
-	const input = `5*(1+3)/2.1 == 1+false`
+	const input = `5*(1+3)/3*3/2+3*5 == 25`
 	scanner := parser.NewScanner(input)
 	tokens, err := scanner.Scan()
 	if err != nil {
 		fmt.Println("Error", err)
+		return
 	}
 	for _, t := range tokens {
 		fmt.Println(t.Line, t)
 	}
 
-	expr := parser.New(tokens).Parse()
+	expr, err := parser.New(tokens).Parse()
+	if err != nil {
+		fmt.Println("Error", err)
+		return
+	}
 	fmt.Println(expr)
+
+	res, err := expr.Evaluate()
+	if err != nil {
+		fmt.Println("Error", err)
+		return
+	}
+	fmt.Println(res)
 }
