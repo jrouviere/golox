@@ -7,15 +7,12 @@ import (
 )
 
 func main() {
-	// const input = `
-	// 	var minDepth = 4;
-	// 	var maxDepth = 14;
-	// 	var stretchDepth = maxDepth + 1;
-	// 	if (this.left == nil) {
-	// 		return this.item;
-	// 	}
-	// `
-	const input = `"hello" + ", " + "world" + "!"`
+	const input = `
+		print "hello" + ", " + "world" + "!";
+		print 12+23/3;
+		print 8*5/2;
+		print 12+23/3 <= 8*5/2;
+	`
 	scanner := parser.NewScanner(input)
 	tokens, err := scanner.Scan()
 	if err != nil {
@@ -31,12 +28,15 @@ func main() {
 		fmt.Println("Error", err)
 		return
 	}
-	fmt.Println(expr)
-
-	res, err := expr.Evaluate()
-	if err != nil {
-		fmt.Println("Error", err)
-		return
+	for _, e := range expr {
+		fmt.Println(e)
 	}
-	fmt.Println(res)
+
+	for _, e := range expr {
+		err := e.Evaluate()
+		if err != nil {
+			fmt.Println("Error", err)
+			return
+		}
+	}
 }

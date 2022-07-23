@@ -22,8 +22,45 @@ func New(tokens []*Token) *Parser {
 	}
 }
 
-func (p *Parser) Parse() (Expr, error) {
-	return p.expression()
+func (p *Parser) Parse() ([]Stmt, error) {
+	var stmts []Stmt
+	for !p.check(EOF) {
+		stmt, err := p.statement()
+		if err != nil {
+			return nil, err // TODO: sync
+		}
+		stmts = append(stmts, stmt)
+	}
+	return stmts, nil
+}
+
+func (p *Parser) statement() (Stmt, error) {
+	if op := p.matchAny(PRINT); op != nil {
+		return p.printStmt()
+	}
+	return p.exprStmt()
+}
+
+func (p *Parser) printStmt() (Stmt, error) {
+	exp, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if rp := p.matchAny(SEMICOLON); rp == nil {
+		return nil, p.genSyntaxError("missing semicolon after value")
+	}
+	return &PrintStmt{exp}, nil
+}
+
+func (p *Parser) exprStmt() (Stmt, error) {
+	exp, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if rp := p.matchAny(SEMICOLON); rp == nil {
+		return nil, p.genSyntaxError("missing semicolon after expression")
+	}
+	return &ExprStmt{exp}, nil
 }
 
 func (p *Parser) expression() (Expr, error) {
