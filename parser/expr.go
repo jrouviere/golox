@@ -1,5 +1,7 @@
 package parser
 
+import "fmt"
+
 type Expr interface {
 	Evaluate() (interface{}, error)
 	String() string
@@ -33,32 +35,58 @@ func (e *BinaryExpr) Evaluate() (interface{}, error) {
 		return nil, err
 	}
 
-	// TODO: check types
-
 	switch e.op.Typ {
 	case PLUS:
-		return l.(float64) + r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) + r.(float64), nil
+		}
+		if allStrings(l, r) {
+			return l.(string) + r.(string), nil
+		}
 	case MINUS:
-		return l.(float64) - r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) - r.(float64), nil
+		}
 	case STAR:
-		return l.(float64) * r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) * r.(float64), nil
+		}
 	case SLASH:
-		return l.(float64) / r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) / r.(float64), nil
+		}
 	case EQUAL_EQUAL:
-		return l.(float64) == r.(float64), nil
+		return isEqual(l, r)
 	case BANG_EQUAL:
-		return l.(float64) != r.(float64), nil
+		eq, err := isEqual(l, r)
+		return !eq, err
 	case LESS_EQUAL:
-		return l.(float64) <= r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) <= r.(float64), nil
+		}
 	case LESS:
-		return l.(float64) < r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) < r.(float64), nil
+		}
+		if allStrings(l, r) {
+			return l.(string) < r.(string), nil
+		}
 	case GREATER_EQUAL:
-		return l.(float64) >= r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) >= r.(float64), nil
+		}
 	case GREATER:
-		return l.(float64) > r.(float64), nil
+		if allNumbers(l, r) {
+			return l.(float64) > r.(float64), nil
+		}
+		if allStrings(l, r) {
+			return l.(string) > r.(string), nil
+		}
 	}
 
-	return nil, &RuntimeError{"unimplemented"}
+	return nil, &RuntimeError{
+		Msg: fmt.Sprintf("unimplemented operation %T %v %T", l, e.op.Lexeme, r),
+	}
 }
 
 type UnaryExpr struct {
@@ -113,4 +141,44 @@ func (e *GroupingExpr) String() string {
 
 func (e *GroupingExpr) Evaluate() (interface{}, error) {
 	return e.expr.Evaluate()
+}
+
+func allNumbers(vals ...interface{}) bool {
+	for _, v := range vals {
+		if _, ok := v.(float64); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func allStrings(vals ...interface{}) bool {
+	for _, v := range vals {
+		if _, ok := v.(string); !ok {
+			return false
+		}
+	}
+	return true
+}
+func allBools(vals ...interface{}) bool {
+	for _, v := range vals {
+		if _, ok := v.(bool); !ok {
+			return false
+		}
+	}
+	return true
+}
+func isEqual(l, r interface{}) (bool, error) {
+	if allNumbers(l, r) {
+		return l.(float64) == r.(float64), nil
+	}
+	if allStrings(l, r) {
+		return l.(string) == r.(string), nil
+	}
+	if allBools(l, r) {
+		return l.(bool) == r.(bool), nil
+	}
+	return false, &RuntimeError{
+		Msg: fmt.Sprintf("cannot compare %T and %T", l, r),
+	}
 }

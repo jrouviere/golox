@@ -15,7 +15,7 @@ func main() {
 	// 		return this.item;
 	// 	}
 	// `
-	const input = `5*(1+3)/3*3/2+3*5 == 25`
+	const input = `"hello" + ", " + "world" + "!"`
 	scanner := parser.NewScanner(input)
 	tokens, err := scanner.Scan()
 	if err != nil {
