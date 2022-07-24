@@ -68,7 +68,27 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.matchAny(PRINT) != nil {
 		return p.printStmt()
 	}
+	if p.matchAny(LEFT_BRACE) != nil {
+		return p.blockStmt()
+	}
 	return p.exprStmt()
+}
+
+func (p *Parser) blockStmt() (Stmt, error) {
+	var lst []Stmt
+
+	for !p.check(RIGHT_BRACE) && !p.check(EOF) {
+		stmt, err := p.declaration()
+		if err != nil {
+			return nil, err
+		}
+		lst = append(lst, stmt)
+	}
+	if p.matchAny(RIGHT_BRACE) == nil {
+		return nil, p.genSyntaxError("missing closing } after block")
+	}
+
+	return &Block{statements: lst}, nil
 }
 
 func (p *Parser) printStmt() (Stmt, error) {

@@ -1,6 +1,9 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Stmt interface {
 	Evaluate(env *Env) error
@@ -52,5 +55,31 @@ func (e *VarDecl) Evaluate(env *Env) error {
 		return err
 	}
 	env.Define(e.name.Lexeme, v)
+	return nil
+}
+
+type Block struct {
+	statements []Stmt
+}
+
+func (e *Block) String() string {
+	var b strings.Builder
+	b.WriteString("(block \n")
+	for _, s := range e.statements {
+		b.WriteString(s.String() + "\n")
+	}
+	b.WriteString(")")
+	return b.String()
+}
+
+func (e *Block) Evaluate(env *Env) error {
+	scope := NewEnv(env)
+
+	for _, s := range e.statements {
+		if err := s.Evaluate(scope); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

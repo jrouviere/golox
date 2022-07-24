@@ -12,7 +12,7 @@ type Interpreter struct {
 
 func New() *Interpreter {
 	return &Interpreter{
-		env: parser.NewEnv(),
+		env: parser.NewEnv(nil),
 	}
 }
 
