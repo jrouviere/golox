@@ -1,9 +1,11 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Expr interface {
-	Evaluate() (interface{}, error)
+	Evaluate(env *Env) (interface{}, error)
 	String() string
 }
 
@@ -25,12 +27,12 @@ func (e *BinaryExpr) String() string {
 	return "(" + e.op.Lexeme + " " + e.left.String() + " " + e.right.String() + ")"
 }
 
-func (e *BinaryExpr) Evaluate() (interface{}, error) {
-	l, err := e.left.Evaluate()
+func (e *BinaryExpr) Evaluate(env *Env) (interface{}, error) {
+	l, err := e.left.Evaluate(env)
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.right.Evaluate()
+	r, err := e.right.Evaluate(env)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +100,8 @@ func (e *UnaryExpr) String() string {
 	return "(" + e.op.Lexeme + " " + e.right.String() + ")"
 }
 
-func (e *UnaryExpr) Evaluate() (interface{}, error) {
-	r, err := e.right.Evaluate()
+func (e *UnaryExpr) Evaluate(env *Env) (interface{}, error) {
+	r, err := e.right.Evaluate(env)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +121,7 @@ func (e *LiteralExpr) String() string {
 	return e.op.Lexeme
 }
 
-func (e *LiteralExpr) Evaluate() (interface{}, error) {
+func (e *LiteralExpr) Evaluate(env *Env) (interface{}, error) {
 	switch e.op.Typ {
 	case NIL:
 		return nil, nil
@@ -139,9 +141,23 @@ func (e *GroupingExpr) String() string {
 	return "(group " + e.expr.String() + ")"
 }
 
-func (e *GroupingExpr) Evaluate() (interface{}, error) {
-	return e.expr.Evaluate()
+func (e *GroupingExpr) Evaluate(env *Env) (interface{}, error) {
+	return e.expr.Evaluate(env)
 }
+
+type Variable struct {
+	name *Token
+}
+
+func (e *Variable) String() string {
+	return "(value " + e.name.Lexeme + ")"
+}
+
+func (e *Variable) Evaluate(env *Env) (interface{}, error) {
+	return env.Get(e.name.Lexeme)
+}
+
+// ---
 
 func allNumbers(vals ...interface{}) bool {
 	for _, v := range vals {

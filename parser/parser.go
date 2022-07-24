@@ -25,17 +25,47 @@ func New(tokens []*Token) *Parser {
 func (p *Parser) Parse() ([]Stmt, error) {
 	var stmts []Stmt
 	for !p.check(EOF) {
-		stmt, err := p.statement()
+		stmt, err := p.declaration()
 		if err != nil {
-			return nil, err // TODO: sync
+			return nil, err
 		}
 		stmts = append(stmts, stmt)
 	}
 	return stmts, nil
 }
 
+func (p *Parser) declaration() (Stmt, error) {
+	if p.matchAny(VAR) != nil {
+		return p.varDeclaration()
+	}
+	//TODO: SYNCHRONISE
+	return p.statement()
+}
+
+func (p *Parser) varDeclaration() (Stmt, error) {
+	name := p.matchAny(IDENTIFIER)
+	if name == nil {
+		return nil, p.genSyntaxError("missing variable name")
+	}
+
+	var init Expr
+	if p.matchAny(EQUAL) != nil {
+		in, err := p.expression()
+		if err != nil {
+			return nil, err
+		}
+		init = in
+	}
+
+	if p.matchAny(SEMICOLON) == nil {
+		return nil, p.genSyntaxError("missing semicolon after value")
+	}
+
+	return &VarDecl{name: name, init: init}, nil
+}
+
 func (p *Parser) statement() (Stmt, error) {
-	if op := p.matchAny(PRINT); op != nil {
+	if p.matchAny(PRINT) != nil {
 		return p.printStmt()
 	}
 	return p.exprStmt()
@@ -46,7 +76,7 @@ func (p *Parser) printStmt() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rp := p.matchAny(SEMICOLON); rp == nil {
+	if p.matchAny(SEMICOLON) == nil {
 		return nil, p.genSyntaxError("missing semicolon after value")
 	}
 	return &PrintStmt{exp}, nil
@@ -57,7 +87,7 @@ func (p *Parser) exprStmt() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rp := p.matchAny(SEMICOLON); rp == nil {
+	if p.matchAny(SEMICOLON) == nil {
 		return nil, p.genSyntaxError("missing semicolon after expression")
 	}
 	return &ExprStmt{exp}, nil
@@ -92,6 +122,9 @@ func (p *Parser) unary() (Expr, error) {
 func (p *Parser) primary() (Expr, error) {
 	if tok := p.matchAny(NUMBER, STRING, NIL, TRUE, FALSE); tok != nil {
 		return &LiteralExpr{tok}, nil
+	}
+	if name := p.matchAny(IDENTIFIER); name != nil {
+		return &Variable{name}, nil
 	}
 	if lp := p.matchAny(LEFT_PAREN); lp != nil {
 		expr, err := p.expression()
