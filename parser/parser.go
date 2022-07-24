@@ -94,7 +94,29 @@ func (p *Parser) exprStmt() (Stmt, error) {
 }
 
 func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
+}
+func (p *Parser) assignment() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.matchAny(EQUAL) != nil {
+		val, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+
+		if v, ok := expr.(*Variable); ok {
+			return &Assign{
+				name:  v.name,
+				value: val,
+			}, nil
+		}
+		return nil, p.genSyntaxError("invalid assignment target")
+	}
+	return expr, nil
 }
 func (p *Parser) equality() (Expr, error) {
 	return p.buildBinaryExpr(p.comparison, EQUAL_EQUAL, BANG_EQUAL)

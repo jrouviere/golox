@@ -7,6 +7,7 @@ func main() {
 		print "hello" + ", " + "world" + "!";
 		var a = 12+23/3;
 		var b = 8*5/2;
+		a = a - 1;
 		print a;
 		print b;
 		print a <= b;

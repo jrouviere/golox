@@ -157,6 +157,23 @@ func (e *Variable) Evaluate(env *Env) (interface{}, error) {
 	return env.Get(e.name.Lexeme)
 }
 
+type Assign struct {
+	name  *Token
+	value Expr
+}
+
+func (e *Assign) String() string {
+	return "(assign " + e.name.Lexeme + " " + e.value.String() + ")"
+}
+
+func (e *Assign) Evaluate(env *Env) (interface{}, error) {
+	v, err := e.value.Evaluate(env)
+	if err != nil {
+		return nil, err
+	}
+	return v, env.Set(e.name.Lexeme, v)
+}
+
 // ---
 
 func allNumbers(vals ...interface{}) bool {
