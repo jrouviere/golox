@@ -174,6 +174,35 @@ func (e *Assign) Evaluate(env *Env) (interface{}, error) {
 	return v, env.Set(e.name.Lexeme, v)
 }
 
+type Logical struct {
+	left     Expr
+	operator *Token
+	right    Expr
+}
+
+func (e *Logical) String() string {
+	return "(" + e.operator.Lexeme + " " + e.left.String() + ", " + e.right.String() + ")"
+}
+
+func (e *Logical) Evaluate(env *Env) (interface{}, error) {
+	l, err := e.left.Evaluate(env)
+	if err != nil {
+		return nil, err
+	}
+
+	if e.operator.Typ == OR {
+		if isTruthy(l) {
+			return l, nil
+		}
+	} else {
+		if !isTruthy(l) {
+			return l, nil
+		}
+	}
+
+	return e.right.Evaluate(env)
+}
+
 // ---
 
 func allNumbers(vals ...interface{}) bool {
@@ -213,5 +242,17 @@ func isEqual(l, r interface{}) (bool, error) {
 	}
 	return false, &RuntimeError{
 		Msg: fmt.Sprintf("cannot compare %T and %T", l, r),
+	}
+}
+
+func isTruthy(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	switch v := v.(type) {
+	case bool:
+		return v
+	default:
+		return true
 	}
 }

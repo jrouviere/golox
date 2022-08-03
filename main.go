@@ -5,21 +5,18 @@ import "github.com/jrouviere/golox/interpreter"
 func main() {
 	const input = `
 		print "hello" + ", " + "world" + "!";
-		var a = "global a";
-		var b = "global b";
-		{
-			var a = "outer a";
-			{
-				var a = "inner a";
-				b = "global b2";
-				print a;
-				print b;
+		var a = 42;
+		var b = 2*21;
+		if (true) {
+			if (a == b) {
+				print "equals";
+			} else {
+				print "not equals";
 			}
-			print a;
-			print b;
 		}
-		print a;
-		print b;
+		print nil or a;
+		print "hello" and "world" or 42==12;
+		print 1==2 or 33;
 	`
 
 	interp := interpreter.New()

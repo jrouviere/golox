@@ -65,6 +65,9 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 func (p *Parser) statement() (Stmt, error) {
+	if p.matchAny(IF) != nil {
+		return p.ifStmt()
+	}
 	if p.matchAny(PRINT) != nil {
 		return p.printStmt()
 	}
@@ -72,6 +75,50 @@ func (p *Parser) statement() (Stmt, error) {
 		return p.blockStmt()
 	}
 	return p.exprStmt()
+}
+
+func (p *Parser) ifStmt() (Stmt, error) {
+	if p.matchAny(LEFT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing '(' after if")
+	}
+	cond, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if p.matchAny(RIGHT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing ')' after if condition")
+	}
+
+	thenBrch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	var elseBrch Stmt
+
+	if p.matchAny(ELSE) != nil {
+		elseBrch, err = p.statement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &IfStmt{
+		expr:     cond,
+		thenBrch: thenBrch,
+		elseBrch: elseBrch,
+	}, nil
+}
+
+func (p *Parser) printStmt() (Stmt, error) {
+	exp, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if p.matchAny(SEMICOLON) == nil {
+		return nil, p.genSyntaxError("missing semicolon after value")
+	}
+	return &PrintStmt{exp}, nil
 }
 
 func (p *Parser) blockStmt() (Stmt, error) {
@@ -91,17 +138,6 @@ func (p *Parser) blockStmt() (Stmt, error) {
 	return &Block{statements: lst}, nil
 }
 
-func (p *Parser) printStmt() (Stmt, error) {
-	exp, err := p.expression()
-	if err != nil {
-		return nil, err
-	}
-	if p.matchAny(SEMICOLON) == nil {
-		return nil, p.genSyntaxError("missing semicolon after value")
-	}
-	return &PrintStmt{exp}, nil
-}
-
 func (p *Parser) exprStmt() (Stmt, error) {
 	exp, err := p.expression()
 	if err != nil {
@@ -117,7 +153,7 @@ func (p *Parser) expression() (Expr, error) {
 	return p.assignment()
 }
 func (p *Parser) assignment() (Expr, error) {
-	expr, err := p.equality()
+	expr, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +171,52 @@ func (p *Parser) assignment() (Expr, error) {
 			}, nil
 		}
 		return nil, p.genSyntaxError("invalid assignment target")
+	}
+	return expr, nil
+}
+func (p *Parser) or() (Expr, error) {
+	expr, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if op := p.matchAny(OR); op == nil {
+			break
+		} else {
+			right, err := p.and()
+			if err != nil {
+				return nil, err
+			}
+			expr = &Logical{
+				left:     expr,
+				operator: op,
+				right:    right,
+			}
+		}
+	}
+	return expr, nil
+}
+func (p *Parser) and() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if op := p.matchAny(AND); op == nil {
+			break
+		} else {
+			right, err := p.equality()
+			if err != nil {
+				return nil, err
+			}
+			expr = &Logical{
+				left:     expr,
+				operator: op,
+				right:    right,
+			}
+		}
 	}
 	return expr, nil
 }

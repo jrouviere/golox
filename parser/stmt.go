@@ -83,3 +83,38 @@ func (e *Block) Evaluate(env *Env) error {
 
 	return nil
 }
+
+type IfStmt struct {
+	expr     Expr
+	thenBrch Stmt
+	elseBrch Stmt
+}
+
+func (e *IfStmt) String() string {
+	var b strings.Builder
+	b.WriteString("(if \n")
+	b.WriteString(e.thenBrch.String() + "\n")
+	if e.elseBrch != nil {
+		b.WriteString(") else (\n")
+		b.WriteString(e.elseBrch.String() + "\n")
+	}
+	b.WriteString(")")
+	return b.String()
+}
+
+func (e *IfStmt) Evaluate(env *Env) error {
+
+	val, err := e.expr.Evaluate(env)
+	if err != nil {
+		return err
+	}
+
+	if isTruthy(val) {
+		return e.thenBrch.Evaluate(env)
+	} else {
+		if e.elseBrch != nil {
+			return e.elseBrch.Evaluate(env)
+		}
+	}
+	return nil
+}
