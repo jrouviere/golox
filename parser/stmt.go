@@ -92,7 +92,7 @@ type IfStmt struct {
 
 func (e *IfStmt) String() string {
 	var b strings.Builder
-	b.WriteString("(if \n")
+	b.WriteString("(if " + e.expr.String() + "\n")
 	b.WriteString(e.thenBrch.String() + "\n")
 	if e.elseBrch != nil {
 		b.WriteString(") else (\n")
@@ -117,4 +117,33 @@ func (e *IfStmt) Evaluate(env *Env) error {
 		}
 	}
 	return nil
+}
+
+type WhileStmt struct {
+	expr Expr
+	body Stmt
+}
+
+func (e *WhileStmt) String() string {
+	var b strings.Builder
+	b.WriteString("(while " + e.expr.String() + "\n")
+	b.WriteString(e.body.String() + "\n")
+	b.WriteString(")")
+	return b.String()
+}
+
+func (e *WhileStmt) Evaluate(env *Env) error {
+	for {
+		cond, err := e.expr.Evaluate(env)
+		if err != nil {
+			return err
+		}
+		if !isTruthy(cond) {
+			return nil
+		}
+
+		if err := e.body.Evaluate(env); err != nil {
+			return err
+		}
+	}
 }

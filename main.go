@@ -17,6 +17,11 @@ func main() {
 		print nil or a;
 		print "hello" and "world" or 42==12;
 		print 1==2 or 33;
+		var i = 0;
+		while (i < 10) {
+			print i;
+			i = i + 1;
+		}
 	`
 
 	interp := interpreter.New()

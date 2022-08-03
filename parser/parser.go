@@ -68,6 +68,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.matchAny(IF) != nil {
 		return p.ifStmt()
 	}
+	if p.matchAny(WHILE) != nil {
+		return p.whileStmt()
+	}
 	if p.matchAny(PRINT) != nil {
 		return p.printStmt()
 	}
@@ -107,6 +110,28 @@ func (p *Parser) ifStmt() (Stmt, error) {
 		expr:     cond,
 		thenBrch: thenBrch,
 		elseBrch: elseBrch,
+	}, nil
+}
+func (p *Parser) whileStmt() (Stmt, error) {
+	if p.matchAny(LEFT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing '(' after while")
+	}
+	cond, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if p.matchAny(RIGHT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing ')' after while condition")
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	return &WhileStmt{
+		expr: cond,
+		body: body,
 	}, nil
 }
 
