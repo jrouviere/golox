@@ -65,6 +65,9 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 func (p *Parser) statement() (Stmt, error) {
+	if p.matchAny(FOR) != nil {
+		return p.forStmt()
+	}
 	if p.matchAny(IF) != nil {
 		return p.ifStmt()
 	}
@@ -78,6 +81,72 @@ func (p *Parser) statement() (Stmt, error) {
 		return p.blockStmt()
 	}
 	return p.exprStmt()
+}
+
+func (p *Parser) forStmt() (Stmt, error) {
+	if p.matchAny(LEFT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing '(' after for")
+	}
+
+	var init Stmt
+	var err error
+	if p.matchAny(SEMICOLON) != nil {
+		// skip
+	} else if p.matchAny(VAR) != nil {
+		init, err = p.varDeclaration()
+	} else {
+		init, err = p.exprStmt()
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var cond Expr
+	if !p.check(SEMICOLON) {
+		cond, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if p.matchAny(SEMICOLON) == nil {
+		return nil, p.genSyntaxError("missing ';' after for condition")
+	}
+
+	var incr Expr
+	if !p.check(RIGHT_PAREN) {
+		incr, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if p.matchAny(RIGHT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing ')' after for clauses")
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	var desugared Stmt = body
+	if incr != nil {
+		desugared = &Block{
+			statements: []Stmt{desugared, &ExprStmt{incr}},
+		}
+	}
+	if cond == nil {
+		cond = &LiteralExpr{&Token{Typ: TRUE, Literal: true}}
+	}
+	desugared = &WhileStmt{cond, desugared}
+
+	if init != nil {
+		desugared = &Block{
+			statements: []Stmt{init, desugared},
+		}
+	}
+
+	return desugared, nil
 }
 
 func (p *Parser) ifStmt() (Stmt, error) {

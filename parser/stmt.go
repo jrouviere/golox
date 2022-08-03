@@ -46,15 +46,22 @@ type VarDecl struct {
 }
 
 func (e *VarDecl) String() string {
+	if e.init == nil {
+		return "(var " + e.name.String() + " )"
+	}
 	return "(var " + e.name.String() + " = " + e.init.String() + " )"
 }
 
 func (e *VarDecl) Evaluate(env *Env) error {
-	v, err := e.init.Evaluate(env)
-	if err != nil {
-		return err
+	var init interface{}
+	if e.init != nil {
+		v, err := e.init.Evaluate(env)
+		if err != nil {
+			return err
+		}
+		init = v
 	}
-	env.Define(e.name.Lexeme, v)
+	env.Define(e.name.Lexeme, init)
 	return nil
 }
 
