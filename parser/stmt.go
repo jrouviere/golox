@@ -40,6 +40,23 @@ func (e *ExprStmt) Evaluate(env *Env) error {
 	return err
 }
 
+type FunStmt struct {
+	name   *Token
+	params []*Token
+	body   Stmt
+}
+
+func (e *FunStmt) String() string {
+	return e.name.String()
+}
+
+func (e *FunStmt) Evaluate(env *Env) error {
+	env.Define(e.name.Lexeme, &LoxFunction{
+		Declaration: e,
+	})
+	return nil
+}
+
 type VarDecl struct {
 	name *Token
 	init Expr

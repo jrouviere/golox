@@ -56,3 +56,7 @@ func (nativeClock) Call(env *parser.Env, args []interface{}) (interface{}, error
 func (nativeClock) Arity() int {
 	return 0
 }
+
+func (nativeClock) String() string {
+	return "<nativeFn>"
+}

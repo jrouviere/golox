@@ -12,6 +12,13 @@ func NewEnv(parent *Env) *Env {
 	}
 }
 
+func (e *Env) Root() *Env {
+	if e.parent != nil {
+		return e.parent.Root()
+	}
+	return e
+}
+
 func (e *Env) Define(name string, value interface{}) {
 	e.values[name] = value
 }

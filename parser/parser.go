@@ -35,11 +35,63 @@ func (p *Parser) Parse() ([]Stmt, error) {
 }
 
 func (p *Parser) declaration() (Stmt, error) {
+	if p.matchAny(FUN) != nil {
+		return p.funDeclaration("function")
+	}
 	if p.matchAny(VAR) != nil {
 		return p.varDeclaration()
 	}
 	//TODO: SYNCHRONISE
 	return p.statement()
+}
+
+func (p *Parser) funDeclaration(kind string) (Stmt, error) {
+	name := p.matchAny(IDENTIFIER)
+	if name == nil {
+		return nil, p.genSyntaxError("missing %v name", kind)
+	}
+
+	if p.matchAny(LEFT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing '(' after %v name", kind)
+	}
+	var params []*Token
+
+	if !p.check(RIGHT_PAREN) {
+		for {
+			if len(params) >= 255 {
+				return nil, p.genSyntaxError("can't have more than 255 parameters")
+			}
+
+			pName := p.matchAny(IDENTIFIER)
+			if pName == nil {
+				return nil, p.genSyntaxError("missing parameter name")
+			}
+			params = append(params, pName)
+
+			if p.matchAny(COMMA) == nil {
+				break
+			}
+		}
+	}
+
+	if p.matchAny(RIGHT_PAREN) == nil {
+		return nil, p.genSyntaxError("missing ')' after %v list of parameters", kind)
+	}
+
+	if p.matchAny(LEFT_BRACE) == nil {
+		return nil, p.genSyntaxError("missing block for %v", kind)
+	}
+
+	body, err := p.blockStmt()
+	if err != nil {
+		return nil, err
+	}
+
+	return &FunStmt{
+		name:   name,
+		params: params,
+		body:   body,
+	}, nil
 }
 
 func (p *Parser) varDeclaration() (Stmt, error) {
@@ -216,6 +268,14 @@ func (p *Parser) printStmt() (Stmt, error) {
 }
 
 func (p *Parser) blockStmt() (Stmt, error) {
+	lst, err := p.block()
+	if err != nil {
+		return nil, err
+	}
+	return &Block{statements: lst}, nil
+}
+
+func (p *Parser) block() ([]Stmt, error) {
 	var lst []Stmt
 
 	for !p.check(RIGHT_BRACE) && !p.check(EOF) {
@@ -228,8 +288,7 @@ func (p *Parser) blockStmt() (Stmt, error) {
 	if p.matchAny(RIGHT_BRACE) == nil {
 		return nil, p.genSyntaxError("missing closing } after block")
 	}
-
-	return &Block{statements: lst}, nil
+	return lst, nil
 }
 
 func (p *Parser) exprStmt() (Stmt, error) {

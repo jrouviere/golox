@@ -5,16 +5,17 @@ import "github.com/jrouviere/golox/interpreter"
 func main() {
 	const input = `
 		var t1 = clock();
-		print "hello" + ", " + "world" + "!";
-		var a = 0;
-		var temp;
-		for (var b = 1; a < 10000000; b = temp + b) {
-			print a;
-			temp = a;
-			a = b;
+		fun add(a, b) {
+			var c = a + b;
+			print c;
 		}
-		var t2 = clock();
-		print t2 - t1;
+		fun sayHello(name) {
+			print "Hello, " + name;
+		}
+		print add;
+		add(1,2);
+
+		sayHello("world!");
 	`
 
 	interp := interpreter.New()
