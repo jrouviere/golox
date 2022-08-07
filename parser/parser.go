@@ -334,7 +334,59 @@ func (p *Parser) unary() (Expr, error) {
 		}
 		return &UnaryExpr{op, u}, nil
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser) call() (Expr, error) {
+	expr, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if lp := p.matchAny(LEFT_PAREN); lp != nil {
+			_expr, err := p.finishCall(expr)
+			if err != nil {
+				return nil, err
+			}
+			expr = _expr
+		} else {
+			break
+		}
+	}
+	return expr, nil
+}
+
+func (p *Parser) finishCall(callee Expr) (Expr, error) {
+	var args []Expr
+	if !p.check(RIGHT_PAREN) {
+		for {
+			arg, err := p.expression()
+			if err != nil {
+				return nil, err
+			}
+			if len(args) >= 255 {
+				return nil, p.genSyntaxError("can't have more than 255 args")
+			}
+
+			args = append(args, arg)
+
+			if c := p.matchAny(COMMA); c == nil {
+				break
+			}
+		}
+	}
+
+	rp := p.matchAny(RIGHT_PAREN)
+	if rp == nil {
+		return nil, p.genSyntaxError("missing closing parenthesis after arguments list")
+	}
+
+	return &Call{
+		callee: callee,
+		paren:  rp,
+		args:   args,
+	}, nil
 }
 
 func (p *Parser) primary() (Expr, error) {

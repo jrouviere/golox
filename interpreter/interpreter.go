@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jrouviere/golox/parser"
 )
@@ -11,8 +12,10 @@ type Interpreter struct {
 }
 
 func New() *Interpreter {
+	globals := parser.NewEnv(nil)
+	globals.Define("clock", nativeClock{})
 	return &Interpreter{
-		env: parser.NewEnv(nil),
+		env: globals,
 	}
 }
 
@@ -43,4 +46,13 @@ func (i *Interpreter) Run(input string) {
 			return
 		}
 	}
+}
+
+type nativeClock struct{}
+
+func (nativeClock) Call(env *parser.Env, args []interface{}) (interface{}, error) {
+	return float64(time.Now().UnixMilli()) / 1000.0, nil
+}
+func (nativeClock) Arity() int {
+	return 0
 }

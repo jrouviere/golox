@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Expr interface {
@@ -201,6 +202,56 @@ func (e *Logical) Evaluate(env *Env) (interface{}, error) {
 	}
 
 	return e.right.Evaluate(env)
+}
+
+type Call struct {
+	callee Expr
+	paren  *Token
+	args   []Expr
+}
+
+func (e *Call) String() string {
+	var args []string
+	for _, arg := range e.args {
+		args = append(args, arg.String())
+	}
+	return "(call " + e.callee.String() + "(" + strings.Join(args, ",") + ")"
+}
+
+func (e *Call) Evaluate(env *Env) (interface{}, error) {
+	callee, err := e.callee.Evaluate(env)
+	if err != nil {
+		return nil, err
+	}
+
+	var args []interface{}
+	for _, a := range e.args {
+		arg, err := a.Evaluate(env)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, arg)
+	}
+
+	callable, ok := callee.(Callable)
+	if !ok {
+		return nil, &RuntimeError{
+			Msg: "can only call functions and classes",
+		}
+	}
+
+	if callable.Arity() != len(args) {
+		return nil, &RuntimeError{
+			Msg: fmt.Sprintf("expected %d arguments but got %d", callable.Arity(), len(args)),
+		}
+	}
+
+	return callable.Call(env, args)
+}
+
+type Callable interface {
+	Arity() int
+	Call(env *Env, args []interface{}) (interface{}, error)
 }
 
 // ---
