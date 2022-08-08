@@ -17,6 +17,9 @@ func (l *LoxFunction) Call(env *Env, args []interface{}) (interface{}, error) {
 
 	err := l.Declaration.body.Evaluate(fnEnv)
 	if err != nil {
+		if rv, ok := err.(*ReturnValue); ok {
+			return rv.val, nil
+		}
 		return nil, err
 	}
 	return nil, nil

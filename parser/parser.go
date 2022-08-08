@@ -129,6 +129,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.matchAny(PRINT) != nil {
 		return p.printStmt()
 	}
+	if p.matchAny(RETURN) != nil {
+		return p.returnStmt()
+	}
 	if p.matchAny(LEFT_BRACE) != nil {
 		return p.blockStmt()
 	}
@@ -265,6 +268,22 @@ func (p *Parser) printStmt() (Stmt, error) {
 		return nil, p.genSyntaxError("missing semicolon after value")
 	}
 	return &PrintStmt{exp}, nil
+}
+
+func (p *Parser) returnStmt() (Stmt, error) {
+	var val Expr
+	if !p.check(SEMICOLON) {
+		_val, err := p.expression()
+		if err != nil {
+			return nil, err
+		}
+		val = _val
+	}
+	if p.matchAny(SEMICOLON) == nil {
+		return nil, p.genSyntaxError("missing semicolon after return value")
+	}
+
+	return &ReturnStmt{val}, nil
 }
 
 func (p *Parser) blockStmt() (Stmt, error) {

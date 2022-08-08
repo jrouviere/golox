@@ -27,6 +27,36 @@ func (e *PrintStmt) Evaluate(env *Env) error {
 	return nil
 }
 
+// we define it as an error so it can bubble up like an exception
+// could use panic instead but that seemed overkill
+type ReturnValue struct {
+	val interface{}
+}
+
+func (r *ReturnValue) Error() string {
+	return ""
+}
+
+type ReturnStmt struct {
+	value Expr
+}
+
+func (e *ReturnStmt) String() string {
+	return "(return " + e.value.String() + ")"
+}
+
+func (e *ReturnStmt) Evaluate(env *Env) error {
+	if e.value == nil {
+		return &ReturnValue{nil}
+	}
+
+	v, err := e.value.Evaluate(env)
+	if err != nil {
+		return err
+	}
+	return &ReturnValue{v}
+}
+
 type ExprStmt struct {
 	value Expr
 }
